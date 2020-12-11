@@ -33,18 +33,53 @@ public class JDBCExamples
         tutorial.viewTable();
         System.out.println();
 
-        System.out.println("Raising coffee prices by 25%");
+        System.out.println("\nRaising coffee prices by 25%");
         tutorial.modifyPrices(1.25f);
         tutorial.viewTable();
 
         System.out.println("\nInserting a new row:");
-        //tutorial.insertRow("Kona", 150, 10.99f, 0, 0);
+        tutorial.insertRow("Kona", 150, 10.99f, 0, 0);
         tutorial.viewTable();
 
         System.out.println("\nDelete :Kona");
         tutorial.deleteRow("Kona");
         tutorial.viewTable();
 
+        System.out.println("\nModifying prices by percentage");
+        tutorial.modifyPricesByPercentage("Colombian", 0.10f, 9.00f);
+
+        System.out.println("\nAdd some coffees (Batch example)");
+        tutorial.batchAddSomeCoffees();
+        tutorial.viewTable();
+
+    }
+    public void  batchAddSomeCoffees() throws SQLException {
+        String SQL = "INSERT INTO COFFEES (COF_NAME, SUP_ID, PRICE, SALES, TOTAL) " +
+                "VALUES(?, ?, ?, ?,?)";
+
+
+        try (PreparedStatement pstmt = con.prepareStatement(SQL)) {
+            con.setAutoCommit(false);
+            pstmt.setString(1, "Blonde Latte");
+            pstmt.setInt(2, 150);
+            pstmt.setFloat(3, 7.55f);
+            pstmt.setInt(4, 0);
+            pstmt.setInt(5, 0);
+            pstmt.addBatch();
+
+            pstmt.setString(1, "Latte Macchiato");
+            pstmt.setInt(2, 150);
+            pstmt.setFloat(3, 9.55f);
+            pstmt.setInt(4, 0);
+            pstmt.setInt(5, 0);
+            pstmt.addBatch();
+
+            int[] count = pstmt.executeBatch();
+            con.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        con.setAutoCommit(true);
     }
     public void insertRow(String coffeeName, int supplierID, float price,
                           int sales, int total)  {
@@ -80,7 +115,8 @@ public class JDBCExamples
     }
 
     /***
-     * PreparedStatement accepts input parameter.
+     * PreparedStatement (Extends Statement) accepts input parameter.
+     * CallableStatement: (Extends PreparedStatement.) Used to execute stored procedures that may contain both input and output parameters.
      * executeUpdate executes the SQL statement in PreparedStatement object,
      * which must be an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or
      * DELETE or an SQL statement that returns nothing,
@@ -152,6 +188,7 @@ public class JDBCExamples
         {
             Savepoint save1 = con.setSavepoint();
             getPrice.setString(1, coffeeName);
+            // Execute only returns boolean value
             if (!getPrice.execute()) {
                 System.out.println("Could not find entry for coffee named " + coffeeName);
             } else {
